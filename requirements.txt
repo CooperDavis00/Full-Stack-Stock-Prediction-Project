@@ -1,4 +1,8 @@
 fastapi[all]
 uvicorn
 yfinance
-
+pandas
+matplotlib
+scikit-learn
+numpy
+requests

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price Prediction</title>
+    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 📊 Load Chart.js -->
+</head>
+<body>
+    <h1>Stock Price Prediction</h1>
+    
+    <form id="stockForm">
+        <label for="ticker">Enter Stock Ticker (e.g., AAPL):</label>
+        <input type="text" id="ticker" name="ticker">
+        <button type="submit">Predict</button>
+    </form>
+
+    <h2>Predicted Price: <span id="predicted_price">N/A</span></h2>
+
+    <h2>Stock Price History</h2>
+    <canvas id="stockChart"></canvas> <!-- 📊 Chart Area -->
+
+    <script>
+        document.getElementById("stockForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            
+            const ticker = document.getElementById("ticker").value.toUpperCase();
+            if (!ticker) {
+                alert("Please enter a stock ticker!");
+                return;
+            }
+    
+            try {
+                // Fetch prediction
+                const formData = new FormData();
+                formData.append("ticker", ticker); 
+    
+                const response = await fetch("/predict/", {
+                    method: "POST",
+                    body: formData, // Use FormData instead of URLSearchParams
+                });
+    
+                const predictionData = await response.json();
+    
+                if (response.ok) {
+                    document.getElementById("predicted_price").textContent = predictionData.predicted_price.toFixed(2);
+                } else {
+                    alert(predictionData.detail || "Error making prediction");
+                }
+    
+                fetch(`/history?ticker=${ticker}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                            return;
+                        }
+        
+                        // Now the prices are rounded in the backend, so no need to round them here
+                        updateChart(data.dates, data.prices);
+                });
+
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Something went wrong. Check the console for details.");
+            }
+        });
+    
+        let stockChart;
+        function updateChart(dates, prices) {
+    console.log("Updating chart with dates:", dates);
+    console.log("Updating chart with prices:", prices);
+
+    if (stockChart) stockChart.destroy(); // Clear old chart
+
+    const ctx = document.getElementById("stockChart").getContext("2d");
+    stockChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: dates,
+            datasets: [{
+                label: "Stock Price",
+                data: prices,
+                borderColor: "blue",
+                fill: false
+            }]
+        },
+        options: { responsive: true }
+    });
+}
+    </script>
+    
+</body>
+</html>
